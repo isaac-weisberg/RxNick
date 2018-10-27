@@ -9,6 +9,14 @@
 import Foundation
 import RxSwift
 
+func encode<Body: Encodable>(_ body: Body) throws -> Data {
+    do {
+        return try JSONEncoder().encode(body)
+    } catch {
+        throw RxNick.NickError.parsing(error)
+    }
+}
+
 public extension RxNick {
     enum Method: String {
         case GET
@@ -33,7 +41,7 @@ public extension RxNick {
             self.data = data
         }
         
-        func json<Target: Decodable>() throws -> Target {
+        public func json<Target: Decodable>() throws -> Target {
             let data = try ensureData()
             do {
                 return try JSONDecoder().decode(Target.self, from: data)
@@ -42,7 +50,7 @@ public extension RxNick {
             }
         }
         
-        func ensureData() throws -> Data {
+        public func ensureData() throws -> Data {
             guard let data = data else {
                 throw NickError.expectedData
             }
@@ -55,11 +63,11 @@ public extension RxNick {
 public class RxNick {
     let session: URLSession
     
-    init(_ session: URLSession = URLSession.shared) {
+    public init(_ session: URLSession = URLSession.shared) {
         self.session = session
     }
     
-    func request(_ request: URLRequest) -> Single<Response> {
+    public func request(_ request: URLRequest) -> Single<Response> {
         return Single.create {[session = session] single in
             var task: URLSessionDataTask? = session.dataTask(with: request) { data, response, error in
                 if let error = error {
@@ -79,15 +87,26 @@ public class RxNick {
         }
     }
     
-    func get(_ url: URL) -> Single<Response> {
+    public func get(_ url: URL) -> Single<Response> {
         let req = URLRequest(url: url)
         return request(req)
     }
     
-    func post(_ url: URL, data: Data?) -> Single<Response> {
+    public func post(_ url: URL, data: Data?) -> Single<Response> {
         var req = URLRequest(url: url)
         req.httpMethod = Method.POST.rawValue
         req.httpBody = data
         return request(req)
+    }
+    
+    func post<Body: Encodable>(_ url: URL, body: Body) -> Single<Response> {
+        return Single<URLRequest>.deferred {
+            var req = URLRequest(url: url)
+            req.httpMethod = Method.POST.rawValue
+            req.httpBody = try encode(body)
+            return .just(req)
+        }.flatMap {[request = request] req in
+            request(req)
+        }
     }
 }
