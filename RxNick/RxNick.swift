@@ -18,14 +18,14 @@ func encode<Body: Encodable>(_ body: Body) throws -> Data {
 }
 
 public extension RxNick {
-    enum Method: String {
+    public enum Method: String {
         case GET
         case POST
     }
 }
 
 public extension RxNick {
-    enum NickError: Error {
+    public enum NickError: Error {
         case parsing(Error)
         case expectedData
     }
