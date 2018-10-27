@@ -17,6 +17,13 @@ public extension RxNick {
 }
 
 public extension RxNick {
+    enum NickError: Error {
+        case parsing(Error)
+        case expectedData
+    }
+}
+
+public extension RxNick {
     public class Response {
         public let res: HTTPURLResponse
         public let data: Data?
@@ -24,6 +31,22 @@ public extension RxNick {
         init(res: HTTPURLResponse, data: Data?) {
             self.res = res
             self.data = data
+        }
+        
+        func json<Target: Decodable>() throws -> Target {
+            let data = try ensureData()
+            do {
+                return try JSONDecoder().decode(Target.self, from: data)
+            } catch {
+                throw NickError.parsing(error)
+            }
+        }
+        
+        func ensureData() throws -> Data {
+            guard let data = data else {
+                throw NickError.expectedData
+            }
+            return data
         }
     }
 }
