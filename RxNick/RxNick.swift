@@ -28,6 +28,7 @@ public extension RxNick {
     public enum NickError: Error {
         case parsing(Error)
         case expectedData
+        case networking(Error)
     }
 }
 
@@ -71,7 +72,7 @@ public class RxNick {
         return Single.create {[session = session] single in
             let task = session.dataTask(with: request) { data, response, error in
                 if let error = error {
-                    single(.error(error))
+                    single(.error(NickError.networking(error)))
                     return
                 }
                 
