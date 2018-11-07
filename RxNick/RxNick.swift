@@ -9,7 +9,7 @@
 import Foundation
 import RxSwift
 
-func encode<Body: Encodable>(_ body: Body) throws -> Data {
+func jsonEncode<Body: Encodable>(_ body: Body) throws -> Data {
     do {
         return try JSONEncoder().encode(body)
     } catch {
@@ -17,10 +17,27 @@ func encode<Body: Encodable>(_ body: Body) throws -> Data {
     }
 }
 
+extension URL {
+    func appeding(query: [String: String]) -> URL {
+        let optionalComponents = URLComponents(url: self, resolvingAgainstBaseURL: false)
+        assert(optionalComponents != nil, "This means that the user has applied a URL with malformed URL string. I literally have no idea what it means, and at this point idc.")
+        var components = optionalComponents!
+        var urlQuery = components.queryItems ?? []
+        urlQuery.append(contentsOf: query.compactMap { pair in
+            let (key, value) = pair
+            return URLQueryItem(name: key, value: value)
+        })
+        components.queryItems = urlQuery
+        let resultingUrl = components.url
+        assert(resultingUrl != nil, "This means that a url was poiting into the file:// scheme and the path was not absolute. Since it's a networking framework, please don't use it to work with the file system")
+        return resultingUrl!
+    }
+}
+
 public extension RxNick {
     public enum Method: String {
-        case GET
-        case POST
+        case get = "GET"
+        case post = "POST"
     }
 }
 
@@ -62,20 +79,38 @@ public extension RxNick {
 
 
 public class RxNick {
+    public typealias Headers = [String: String]
+    public typealias URLQuery = [String: String]
+    typealias Body = Data
+    typealias URLFactory = () -> URL
+    typealias BodyFactory = () throws -> Body?
+    typealias HeadersFactory = () -> Headers?
+    
     let session: URLSession
     
     public init(_ session: URLSession = URLSession.shared) {
         self.session = session
     }
     
-    public func request(_ request: URLRequest) -> Single<Response> {
+    func request(method: Method, urlFactory: @escaping URLFactory, headersFactory: @escaping HeadersFactory, bodyFactory: @escaping BodyFactory) -> Single<Response> {
         return Single.create {[session = session] single in
+            var request = URLRequest(url: urlFactory())
+            request.httpMethod = method.rawValue
+            do {
+                request.httpBody = try bodyFactory()
+            } catch {
+                assert(error is NickError, "Should be already compliant to unified error model")
+                single(.error(error))
+            }
+            request.allHTTPHeaderFields = headersFactory()
+            
             let task = session.dataTask(with: request) { data, response, error in
                 if let error = error {
                     single(.error(NickError.networking(error)))
                     return
                 }
                 
+                assert(response is HTTPURLResponse, "Since the api used in this callback is the dataTask API, as per Apple docs, this object is always the HTTPURLResponse and thus this assertion.")
                 let response = response as! HTTPURLResponse
                 let resp = Response(res: response, data: data)
                 single(.success(resp))
@@ -87,26 +122,25 @@ public class RxNick {
         }
     }
     
-    public func get(_ url: URL) -> Single<Response> {
-        let req = URLRequest(url: url)
-        return request(req)
+    public func get(_ url: URL, query: [String: String]?, headers: Headers?) -> Single<Response> {
+        return request(method: .get, urlFactory: {
+            guard let query = query else {
+                return url
+            }
+            return url.appeding(query: query)
+        }, headersFactory: { headers }, bodyFactory: { nil })
     }
     
-    public func post(_ url: URL, data: Data?) -> Single<Response> {
-        var req = URLRequest(url: url)
-        req.httpMethod = Method.POST.rawValue
-        req.httpBody = data
-        return request(req)
-    }
-    
-    func post<Body: Encodable>(_ url: URL, body: Body) -> Single<Response> {
-        return Single<URLRequest>.deferred {
-            var req = URLRequest(url: url)
-            req.httpMethod = Method.POST.rawValue
-            req.httpBody = try encode(body)
-            return .just(req)
-        }.flatMap {[request = request] req in
-            request(req)
-        }
+    public func post<Object: Encodable>(_ url: URL, object: Object?, headers: Headers?) -> Single<Response> {
+        return request(method: .post, urlFactory: { url }, headersFactory: {
+            var headers = headers ?? [:]
+            headers["Content-Type"] = "application/json"
+            return headers
+        }, bodyFactory: {
+            if let object = object {
+                return try jsonEncode(object)
+            }
+            return nil
+        })
     }
 }
