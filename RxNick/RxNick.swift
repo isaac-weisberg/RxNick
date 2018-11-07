@@ -69,7 +69,7 @@ public class RxNick {
     
     public func request(_ request: URLRequest) -> Single<Response> {
         return Single.create {[session = session] single in
-            var task: URLSessionDataTask? = session.dataTask(with: request) { data, response, error in
+            let task = session.dataTask(with: request) { data, response, error in
                 if let error = error {
                     single(.error(error))
                     return
@@ -81,8 +81,7 @@ public class RxNick {
             }
             
             return Disposables.create {
-                task?.cancel()
-                task = nil
+                task.cancel()
             }
         }
     }
