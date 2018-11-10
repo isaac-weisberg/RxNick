@@ -35,8 +35,11 @@ extension URL {
 }
 
 public extension RxNick {
-    public enum Method: String {
+    public enum MethodBodyless: String {
         case get = "GET"
+    }
+    
+    public enum MethodBodyful: String {
         case post = "POST"
     }
 }
@@ -92,10 +95,10 @@ public class RxNick {
         self.session = session
     }
     
-    func request(method: Method, urlFactory: @escaping URLFactory, headersFactory: @escaping HeadersFactory, bodyFactory: @escaping BodyFactory) -> Single<Response> {
+    func request(method: String, urlFactory: @escaping URLFactory, headersFactory: @escaping HeadersFactory, bodyFactory: @escaping BodyFactory) -> Single<Response> {
         return Single.create {[session = session] single in
             var request = URLRequest(url: urlFactory())
-            request.httpMethod = method.rawValue
+            request.httpMethod = method
             do {
                 request.httpBody = try bodyFactory()
             } catch {
@@ -122,8 +125,8 @@ public class RxNick {
         }
     }
     
-    public func get(_ url: URL, query: [String: String]?, headers: Headers?) -> Single<Response> {
-        return request(method: .get, urlFactory: {
+    public func bodylessRequest(_ method: MethodBodyless, _ url: URL, query: [String: String]?, headers: Headers?) -> Single<Response> {
+        return request(method: method.rawValue, urlFactory: {
             guard let query = query else {
                 return url
             }
@@ -131,8 +134,8 @@ public class RxNick {
         }, headersFactory: { headers }, bodyFactory: { nil })
     }
     
-    public func post<Object: Encodable>(_ url: URL, object: Object?, headers: Headers?) -> Single<Response> {
-        return request(method: .post, urlFactory: { url }, headersFactory: {
+    public func bodyfulRequest<Object: Encodable>(_ method: MethodBodyful, _ url: URL, object: Object?, headers: Headers?) -> Single<Response> {
+        return request(method: method.rawValue, urlFactory: { url }, headersFactory: {
             var headers = headers ?? [:]
             headers["Content-Type"] = "application/json"
             return headers
