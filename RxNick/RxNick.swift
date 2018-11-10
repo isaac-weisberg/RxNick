@@ -47,6 +47,7 @@ public extension RxNick {
 public extension RxNick {
     public enum NickError: Error {
         case parsing(Error)
+        case encoding(Error)
         case expectedData
         case networking(Error)
     }
@@ -80,14 +81,56 @@ public extension RxNick {
     }
 }
 
+public protocol RxNickRequestBody {
+    /**
+     `data` method optionaly produces the Data object of
+     the request body. In case of an error being thrown by the
+     implementation of this method, it gets force wrapped
+     into RxNick.NickError.encoding and this its unity
+     compliance is not required.
+     */
+    func data() throws -> Data?
+    
+    /**
+     Same this with this method: if an error is thrown,
+     it's wrapped into RxNick.NickError.encoding
+     */
+    func headers() throws -> [String: String]?
+}
+
+public extension RxNick {
+    public class JsonBody<Object: Encodable>: RxNickRequestBody {
+        public func headers() throws -> [String: String]? {
+            return ["Content-Type": "application/json"]
+        }
+        
+        public func data() throws -> Data? {
+            return try JSONEncoder().encode(object)
+        }
+        
+        let object: Object
+        
+        public init(with object: Object) {
+            self.object = object
+        }
+    }
+    
+    public class VoidBody: RxNickRequestBody {
+        public func headers() throws -> [String: String]? {
+            return nil
+        }
+        
+        public func data() throws -> Data? {
+            return nil
+        }
+    }
+}
 
 public class RxNick {
     public typealias Headers = [String: String]
     public typealias URLQuery = [String: String]
-    typealias Body = Data
+    typealias HeaderMigrationStrat = (Headers.Value, Headers.Value) -> Headers.Value
     typealias URLFactory = () -> URL
-    typealias BodyFactory = () throws -> Body?
-    typealias HeadersFactory = () -> Headers?
     
     let session: URLSession
     
@@ -95,17 +138,25 @@ public class RxNick {
         self.session = session
     }
     
-    func request(method: String, urlFactory: @escaping URLFactory, headersFactory: @escaping HeadersFactory, bodyFactory: @escaping BodyFactory) -> Single<Response> {
+    func request(method: String, urlFactory: @escaping URLFactory, headers customHeaders: Headers?, body: RxNickRequestBody? = nil) -> Single<Response> {
         return Single.create {[session = session] single in
+            let migrationStrat: HeaderMigrationStrat = { $1 }
+            
             var request = URLRequest(url: urlFactory())
             request.httpMethod = method
+            var allHeaders: Headers = [:]
             do {
-                request.httpBody = try bodyFactory()
+                request.httpBody = try body?.data()
+                if let bodyHeaders = try body?.headers() {
+                    allHeaders.merge(bodyHeaders, uniquingKeysWith: migrationStrat)
+                }
             } catch {
-                assert(error is NickError, "Should be already compliant to unified error model")
-                single(.error(error))
+                single(.error(RxNick.NickError.encoding(error)))
             }
-            request.allHTTPHeaderFields = headersFactory()
+            
+            if let customHeaders = customHeaders {
+                allHeaders.merge(customHeaders, uniquingKeysWith: migrationStrat)
+            }
             
             let task = session.dataTask(with: request) { data, response, error in
                 if let error = error {
@@ -131,19 +182,10 @@ public class RxNick {
                 return url
             }
             return url.appeding(query: query)
-        }, headersFactory: { headers }, bodyFactory: { nil })
+        }, headers: headers)
     }
     
-    public func bodyfulRequest<Object: Encodable>(_ method: MethodBodyful, _ url: URL, object: Object?, headers: Headers?) -> Single<Response> {
-        return request(method: method.rawValue, urlFactory: { url }, headersFactory: {
-            var headers = headers ?? [:]
-            headers["Content-Type"] = "application/json"
-            return headers
-        }, bodyFactory: {
-            if let object = object {
-                return try jsonEncode(object)
-            }
-            return nil
-        })
+    public func bodyfulRequest(_ method: MethodBodyful, _ url: URL, body: RxNickRequestBody, headers: Headers?) -> Single<Response> {
+        return request(method: method.rawValue, urlFactory: { url }, headers: headers, body: body)
     }
 }
