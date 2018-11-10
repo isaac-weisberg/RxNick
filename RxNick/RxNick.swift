@@ -129,8 +129,10 @@ public extension RxNick {
 public class RxNick {
     public typealias Headers = [String: String]
     public typealias URLQuery = [String: String]
+    public typealias MethodFactory = () throws -> String
+    public typealias HeadersFactory = () throws -> Headers
+    public typealias URLFactory = () throws -> URL
     typealias HeaderMigrationStrat = (Headers.Value, Headers.Value) -> Headers.Value
-    typealias URLFactory = () -> URL
     
     let session: URLSession
     
@@ -138,24 +140,36 @@ public class RxNick {
         self.session = session
     }
     
-    func request(method: String, urlFactory: @escaping URLFactory, headers customHeaders: Headers?, body: RxNickRequestBody? = nil) -> Single<Response> {
+    public func request(methodFactory: @escaping MethodFactory, urlFactory: @escaping URLFactory, headersFactory: HeadersFactory?, body: RxNickRequestBody? = nil) -> Single<Response> {
         return Single.create {[session = session] single in
             let migrationStrat: HeaderMigrationStrat = { $1 }
             
-            var request = URLRequest(url: urlFactory())
-            request.httpMethod = method
-            var allHeaders: Headers = [:]
+            let request: URLRequest
+            
             do {
-                request.httpBody = try body?.data()
+                let url = try urlFactory()
+                
+                var req = URLRequest(url: url)
+                req.httpMethod = try methodFactory()
+                
+                req.httpBody = try body?.data()
+                
+                var allHeaders: Headers = [:]
+                
                 if let bodyHeaders = try body?.headers() {
                     allHeaders.merge(bodyHeaders, uniquingKeysWith: migrationStrat)
                 }
+                
+                if let customHeaders = try headersFactory?() {
+                    allHeaders.merge(customHeaders, uniquingKeysWith: migrationStrat)
+                }
+                
+                req.allHTTPHeaderFields = allHeaders
+                
+                request = req
             } catch {
                 single(.error(RxNick.NickError.encoding(error)))
-            }
-            
-            if let customHeaders = customHeaders {
-                allHeaders.merge(customHeaders, uniquingKeysWith: migrationStrat)
+                return Disposables.create()
             }
             
             let task = session.dataTask(with: request) { data, response, error in
@@ -177,15 +191,32 @@ public class RxNick {
     }
     
     public func bodylessRequest(_ method: MethodBodyless, _ url: URL, query: [String: String]?, headers: Headers?) -> Single<Response> {
-        return request(method: method.rawValue, urlFactory: {
-            guard let query = query else {
-                return url
-            }
-            return url.appeding(query: query)
-        }, headers: headers)
+        return request(
+            methodFactory: { method.rawValue },
+            urlFactory: {
+                guard let query = query else {
+                    return url
+                }
+                return url.appeding(query: query)
+            },
+            headersFactory: buildHeadersFactory(from: headers)
+        )
     }
     
     public func bodyfulRequest(_ method: MethodBodyful, _ url: URL, body: RxNickRequestBody, headers: Headers?) -> Single<Response> {
-        return request(method: method.rawValue, urlFactory: { url }, headers: headers, body: body)
+        return request(
+            methodFactory: { method.rawValue },
+            urlFactory: { url },
+            headersFactory: buildHeadersFactory(from: headers),
+            body: body
+        )
     }
+}
+
+private func buildHeadersFactory(from headers: RxNick.Headers?) -> RxNick.HeadersFactory? {
+    var headersFactory: RxNick.HeadersFactory?
+    if let headers = headers {
+        headersFactory = { headers }
+    }
+    return headersFactory
 }
