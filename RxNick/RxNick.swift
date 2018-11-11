@@ -123,6 +123,8 @@ public extension RxNick {
         public func data() throws -> Data? {
             return nil
         }
+        
+        public static let void = VoidBody()
     }
 }
 
