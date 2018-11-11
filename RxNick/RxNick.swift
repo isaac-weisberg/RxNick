@@ -184,6 +184,8 @@ public class RxNick {
                 single(.success(resp))
             }
             
+            task.resume()
+            
             return Disposables.create {
                 task.cancel()
             }
