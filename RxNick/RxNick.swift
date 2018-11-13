@@ -72,6 +72,15 @@ public class Response {
         }
     }
     
+    public func json<Target: Decodable>(type: Target.Type) throws -> Target {
+        let data = try ensureData()
+        do {
+            return try JSONDecoder().decode(type, from: data)
+        } catch {
+            throw NickError.parsing(error)
+        }
+    }
+    
     public func ensureData() throws -> Data {
         guard let data = data else {
             throw NickError.expectedData
