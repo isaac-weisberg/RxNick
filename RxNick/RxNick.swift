@@ -47,6 +47,7 @@ public extension RxNick {
         case encoding(Error)
         case expectedData
         case networking(Error)
+        case statusCode(Int, Range<Int>)
     }
 }
 
