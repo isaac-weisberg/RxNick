@@ -80,7 +80,7 @@ public class Response {
     }
 }
 
-public protocol RxNickRequestBody {
+public protocol RequestBody {
     /**
      `data` method optionaly produces the Data object of
      the request body. In case of an error being thrown by the
@@ -97,52 +97,50 @@ public protocol RxNickRequestBody {
     func headers() throws -> Headers?
 }
 
-public extension RxNick {
-    public class JsonBody<Object: Encodable>: RxNickRequestBody {
-        public func headers() throws -> Headers? {
-            return ["Content-Type": "application/json"]
-        }
-        
-        public func data() throws -> Data? {
-            return try JSONEncoder().encode(object)
-        }
-        
-        let object: Object
-        
-        public init(with object: Object) {
-            self.object = object
-        }
+public class RequestJsonBody<Object: Encodable>: RequestBody {
+    public func headers() throws -> Headers? {
+        return ["Content-Type": "application/json"]
     }
     
-    public class RawBody: RxNickRequestBody {
-        public func data() throws -> Data? {
-            return actualData
-        }
-        
-        public func headers() throws -> Headers? {
-            return actualHeaders
-        }
-        
-        let actualData: Data?
-        let actualHeaders: Headers?
-        
-        public init(data: Data?, headers: Headers? = nil) {
-            actualHeaders = headers
-            actualData = data
-        }
+    public func data() throws -> Data? {
+        return try JSONEncoder().encode(object)
     }
     
-    public class VoidBody: RxNickRequestBody {
-        public func headers() throws -> Headers? {
-            return nil
-        }
-        
-        public func data() throws -> Data? {
-            return nil
-        }
-        
-        public static let void = VoidBody()
+    let object: Object
+    
+    public init(with object: Object) {
+        self.object = object
     }
+}
+
+public class RequestRawBody: RequestBody {
+    public func data() throws -> Data? {
+        return actualData
+    }
+    
+    public func headers() throws -> Headers? {
+        return actualHeaders
+    }
+    
+    let actualData: Data?
+    let actualHeaders: Headers?
+    
+    public init(data: Data?, headers: Headers? = nil) {
+        actualHeaders = headers
+        actualData = data
+    }
+}
+
+public class RequestVoidBody: RequestBody {
+    public func headers() throws -> Headers? {
+        return nil
+    }
+    
+    public func data() throws -> Data? {
+        return nil
+    }
+    
+    public static let void = RequestVoidBody()
 }
 
 
@@ -161,7 +159,7 @@ public class RxNick {
         self.session = session
     }
     
-    public func request(methodFactory: @escaping MethodFactory, urlFactory: @escaping URLFactory, headersFactory: HeadersFactory?, body: RxNickRequestBody? = nil) -> Single<Response> {
+    public func request(methodFactory: @escaping MethodFactory, urlFactory: @escaping URLFactory, headersFactory: HeadersFactory?, body: RequestBody? = nil) -> Single<Response> {
         return Single.create {[session = session] single in
             let migrationStrat: HeaderMigrationStrat = { $1 }
             
@@ -226,7 +224,7 @@ public class RxNick {
         )
     }
     
-    public func bodyfulRequest(_ method: MethodBodyful, _ url: URL, body: RxNickRequestBody, headers: Headers?) -> Single<Response> {
+    public func bodyfulRequest(_ method: MethodBodyful, _ url: URL, body: RequestBody, headers: Headers?) -> Single<Response> {
         return request(
             methodFactory: { method.rawValue },
             urlFactory: { url },
