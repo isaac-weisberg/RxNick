@@ -18,15 +18,12 @@ func jsonEncode<Body: Encodable>(_ body: Body) throws -> Data {
 }
 
 extension URL {
-    func appeding(query: [String: String]) -> URL {
+    func appending(query: RxNick.URLQuery) -> URL {
         let optionalComponents = URLComponents(url: self, resolvingAgainstBaseURL: false)
         assert(optionalComponents != nil, "This means that the user has applied a URL with malformed URL string. I literally have no idea what it means, and at this point idc.")
         var components = optionalComponents!
         var urlQuery = components.queryItems ?? []
-        urlQuery.append(contentsOf: query.compactMap { pair in
-            let (key, value) = pair
-            return URLQueryItem(name: key, value: value)
-        })
+        urlQuery.append(contentsOf: query)
         components.queryItems = urlQuery
         let resultingUrl = components.url
         assert(resultingUrl != nil, "This means that a url was poiting into the file:// scheme and the path was not absolute. Since it's a networking framework, please don't use it to work with the file system")
@@ -148,7 +145,7 @@ public extension RxNick {
 
 public class RxNick {
     public typealias Headers = [String: String]
-    public typealias URLQuery = [String: String]
+    public typealias URLQuery = [URLQueryItem]
     public typealias MethodFactory = () throws -> String
     public typealias HeadersFactory = () throws -> Headers
     public typealias URLFactory = () throws -> URL
@@ -219,7 +216,7 @@ public class RxNick {
                 guard let query = query else {
                     return url
                 }
-                return url.appeding(query: query)
+                return url.appending(query: query)
             },
             headersFactory: buildHeadersFactory(from: headers)
         )
