@@ -95,12 +95,12 @@ public protocol RxNickRequestBody {
      Same this with this method: if an error is thrown,
      it's wrapped into RxNick.NickError.encoding
      */
-    func headers() throws -> [String: String]?
+    func headers() throws -> RxNick.Headers?
 }
 
 public extension RxNick {
     public class JsonBody<Object: Encodable>: RxNickRequestBody {
-        public func headers() throws -> [String: String]? {
+        public func headers() throws -> RxNick.Headers? {
             return ["Content-Type": "application/json"]
         }
         
@@ -115,8 +115,26 @@ public extension RxNick {
         }
     }
     
+    public class RawBody: RxNickRequestBody {
+        public func data() throws -> Data? {
+            return actualData
+        }
+        
+        public func headers() throws -> Headers? {
+            return actualHeaders
+        }
+        
+        let actualData: Data?
+        let actualHeaders: Headers?
+        
+        public init(data: Data?, headers: Headers? = nil) {
+            actualHeaders = headers
+            actualData = data
+        }
+    }
+    
     public class VoidBody: RxNickRequestBody {
-        public func headers() throws -> [String: String]? {
+        public func headers() throws -> Headers? {
             return nil
         }
         
@@ -194,7 +212,7 @@ public class RxNick {
         }
     }
     
-    public func bodylessRequest(_ method: MethodBodyless, _ url: URL, query: [String: String]?, headers: Headers?) -> Single<Response> {
+    public func bodylessRequest(_ method: MethodBodyless, _ url: URL, query: URLQuery?, headers: Headers?) -> Single<Response> {
         return request(
             methodFactory: { method.rawValue },
             urlFactory: {
