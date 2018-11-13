@@ -47,7 +47,7 @@ public extension RxNick {
         case encoding(Error)
         case expectedData
         case networking(Error)
-        case statusCode(Int, Range<Int>)
+        case statusCode(Int, StatusCodeRangeUnion)
     }
 }
 
@@ -61,10 +61,10 @@ public extension RxNick {
             self.data = data
         }
         
-        public func ensureStatusCode(in range: Range<Int>) throws {
+        public func ensureStatusCode(in union: StatusCodeRangeUnion) throws {
             let code = res.statusCode
-            guard range.contains(code) else {
-                throw NickError.statusCode(code, range)
+            guard union.contains(where: { $0.contains(code) }) else {
+                throw NickError.statusCode(code, union)
             }
         }
         
@@ -157,6 +157,7 @@ public class RxNick {
     public typealias MethodFactory = () throws -> String
     public typealias HeadersFactory = () throws -> Headers
     public typealias URLFactory = () throws -> URL
+    public typealias StatusCodeRangeUnion = [Range<Int>]
     typealias HeaderMigrationStrat = (Headers.Value, Headers.Value) -> Headers.Value
     
     let session: URLSession
