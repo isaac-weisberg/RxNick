@@ -13,12 +13,12 @@ func jsonEncode<Body: Encodable>(_ body: Body) throws -> Data {
     do {
         return try JSONEncoder().encode(body)
     } catch {
-        throw RxNick.NickError.parsing(error)
+        throw NickError.parsing(error)
     }
 }
 
 extension URL {
-    func appending(query: RxNick.URLQuery) -> URL {
+    func appending(query: URLQuery) -> URL {
         let optionalComponents = URLComponents(url: self, resolvingAgainstBaseURL: false)
         assert(optionalComponents != nil, "This means that the user has applied a URL with malformed URL string. I literally have no idea what it means, and at this point idc.")
         var components = optionalComponents!
@@ -31,58 +31,52 @@ extension URL {
     }
 }
 
-public extension RxNick {
-    public enum MethodBodyless: String {
-        case get = "GET"
+public enum MethodBodyless: String {
+    case get = "GET"
+}
+
+public enum MethodBodyful: String {
+    case post = "POST"
+}
+
+public enum NickError: Error {
+    case parsing(Error)
+    case encoding(Error)
+    case expectedData
+    case networking(Error)
+    case statusCode(Int, StatusCodeRangeUnion)
+}
+
+public class Response {
+    public let res: HTTPURLResponse
+    public let data: Data?
+    
+    init(res: HTTPURLResponse, data: Data?) {
+        self.res = res
+        self.data = data
     }
     
-    public enum MethodBodyful: String {
-        case post = "POST"
+    public func ensureStatusCode(in union: StatusCodeRangeUnion) throws {
+        let code = res.statusCode
+        guard union.contains(where: { $0.contains(code) }) else {
+            throw NickError.statusCode(code, union)
+        }
     }
-}
-
-public extension RxNick {
-    public enum NickError: Error {
-        case parsing(Error)
-        case encoding(Error)
-        case expectedData
-        case networking(Error)
-        case statusCode(Int, StatusCodeRangeUnion)
+    
+    public func json<Target: Decodable>() throws -> Target {
+        let data = try ensureData()
+        do {
+            return try JSONDecoder().decode(Target.self, from: data)
+        } catch {
+            throw NickError.parsing(error)
+        }
     }
-}
-
-public extension RxNick {
-    public class Response {
-        public let res: HTTPURLResponse
-        public let data: Data?
-        
-        init(res: HTTPURLResponse, data: Data?) {
-            self.res = res
-            self.data = data
+    
+    public func ensureData() throws -> Data {
+        guard let data = data else {
+            throw NickError.expectedData
         }
-        
-        public func ensureStatusCode(in union: StatusCodeRangeUnion) throws {
-            let code = res.statusCode
-            guard union.contains(where: { $0.contains(code) }) else {
-                throw NickError.statusCode(code, union)
-            }
-        }
-        
-        public func json<Target: Decodable>() throws -> Target {
-            let data = try ensureData()
-            do {
-                return try JSONDecoder().decode(Target.self, from: data)
-            } catch {
-                throw NickError.parsing(error)
-            }
-        }
-        
-        public func ensureData() throws -> Data {
-            guard let data = data else {
-                throw NickError.expectedData
-            }
-            return data
-        }
+        return data
     }
 }
 
@@ -100,12 +94,12 @@ public protocol RxNickRequestBody {
      Same this with this method: if an error is thrown,
      it's wrapped into RxNick.NickError.encoding
      */
-    func headers() throws -> RxNick.Headers?
+    func headers() throws -> Headers?
 }
 
 public extension RxNick {
     public class JsonBody<Object: Encodable>: RxNickRequestBody {
-        public func headers() throws -> RxNick.Headers? {
+        public func headers() throws -> Headers? {
             return ["Content-Type": "application/json"]
         }
         
@@ -151,15 +145,16 @@ public extension RxNick {
     }
 }
 
+
+public typealias Headers = [String: String]
+public typealias URLQuery = [URLQueryItem]
+public typealias MethodFactory = () throws -> String
+public typealias HeadersFactory = () throws -> Headers
+public typealias URLFactory = () throws -> URL
+public typealias StatusCodeRangeUnion = [Range<Int>]
+typealias HeaderMigrationStrat = (Headers.Value, Headers.Value) -> Headers.Value
+
 public class RxNick {
-    public typealias Headers = [String: String]
-    public typealias URLQuery = [URLQueryItem]
-    public typealias MethodFactory = () throws -> String
-    public typealias HeadersFactory = () throws -> Headers
-    public typealias URLFactory = () throws -> URL
-    public typealias StatusCodeRangeUnion = [Range<Int>]
-    typealias HeaderMigrationStrat = (Headers.Value, Headers.Value) -> Headers.Value
-    
     let session: URLSession
     
     public init(_ session: URLSession = URLSession.shared) {
@@ -194,7 +189,7 @@ public class RxNick {
                 
                 request = req
             } catch {
-                single(.error(RxNick.NickError.encoding(error)))
+                single(.error(NickError.encoding(error)))
                 return Disposables.create()
             }
             
@@ -241,8 +236,8 @@ public class RxNick {
     }
 }
 
-private func buildHeadersFactory(from headers: RxNick.Headers?) -> RxNick.HeadersFactory? {
-    var headersFactory: RxNick.HeadersFactory?
+private func buildHeadersFactory(from headers: Headers?) -> HeadersFactory? {
+    var headersFactory: HeadersFactory?
     if let headers = headers {
         headersFactory = { headers }
     }
