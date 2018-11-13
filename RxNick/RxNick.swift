@@ -61,6 +61,13 @@ public extension RxNick {
             self.data = data
         }
         
+        public func ensureStatusCode(in range: Range<Int>) throws {
+            let code = res.statusCode
+            guard range.contains(code) else {
+                throw NickError.statusCode(code, range)
+            }
+        }
+        
         public func json<Target: Decodable>() throws -> Target {
             let data = try ensureData()
             do {
