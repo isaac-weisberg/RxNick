@@ -7,11 +7,13 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		5C7FF265219C6C2500D64DF0 /* ResponsePrimitive.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C7FF264219C6C2500D64DF0 /* ResponsePrimitive.swift */; };
 		5CFBE6A7218460D000B1F819 /* RxNick.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CFBE6A6218460D000B1F819 /* RxNick.swift */; };
 		5CFBE6AA2184615300B1F819 /* RxSwift.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5CFBE6A92184615300B1F819 /* RxSwift.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		5C7FF264219C6C2500D64DF0 /* ResponsePrimitive.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResponsePrimitive.swift; sourceTree = "<group>"; };
 		5CFBE69B218460BC00B1F819 /* RxNick.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = RxNick.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		5CFBE69F218460BC00B1F819 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		5CFBE6A6218460D000B1F819 /* RxNick.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RxNick.swift; sourceTree = "<group>"; };
@@ -52,6 +54,7 @@
 			children = (
 				5CFBE69F218460BC00B1F819 /* Info.plist */,
 				5CFBE6A6218460D000B1F819 /* RxNick.swift */,
+				5C7FF264219C6C2500D64DF0 /* ResponsePrimitive.swift */,
 			);
 			path = RxNick;
 			sourceTree = "<group>";
@@ -142,6 +145,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				5C7FF265219C6C2500D64DF0 /* ResponsePrimitive.swift in Sources */,
 				5CFBE6A7218460D000B1F819 /* RxNick.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

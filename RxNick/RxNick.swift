@@ -47,39 +47,6 @@ public enum NickError: Error {
     case statusCode(Int, StatusCodeRange)
 }
 
-public class Response {
-    public let res: HTTPURLResponse
-    public let data: Data?
-    
-    init(res: HTTPURLResponse, data: Data?) {
-        self.res = res
-        self.data = data
-    }
-    
-    public func ensureStatusCode(in union: StatusCodeRange) throws {
-        let code = res.statusCode
-        guard union.contains(where: { $0.contains(code) }) else {
-            throw NickError.statusCode(code, union)
-        }
-    }
-    
-    public func json<Target: Decodable>() throws -> Target {
-        let data = try ensureData()
-        do {
-            return try JSONDecoder().decode(Target.self, from: data)
-        } catch {
-            throw NickError.parsing(error)
-        }
-    }
-        
-    public func ensureData() throws -> Data {
-        guard let data = data else {
-            throw NickError.expectedData
-        }
-        return data
-    }
-}
-
 public protocol RequestBody {
     /**
      `data` method optionaly produces the Data object of
@@ -159,7 +126,7 @@ public class RxNick {
         self.session = session
     }
     
-    public func request(methodFactory: @escaping MethodFactory, urlFactory: @escaping URLFactory, headersFactory: HeadersFactory?, body: RequestBody? = nil) -> Single<Response> {
+    public func request(methodFactory: @escaping MethodFactory, urlFactory: @escaping URLFactory, headersFactory: HeadersFactory?, body: RequestBody? = nil) -> Single<ResponsePrimitive<FreshResponseTrait>> {
         return Single.create {[session = session] single in
             let migrationStrat: HeaderMigrationStrat = { $1 }
             
@@ -199,7 +166,7 @@ public class RxNick {
                 
                 assert(response is HTTPURLResponse, "Since the api used in this callback is the dataTask API, as per Apple docs, this object is always the HTTPURLResponse and thus this assertion.")
                 let response = response as! HTTPURLResponse
-                let resp = Response(res: response, data: data)
+                let resp = ResponsePrimitive<FreshResponseTrait>(res: response, data: data)
                 single(.success(resp))
             }
             
@@ -211,7 +178,7 @@ public class RxNick {
         }
     }
     
-    public func bodylessRequest(_ method: MethodBodyless, _ url: URL, query: URLQuery?, headers: Headers?) -> Single<Response> {
+    public func bodylessRequest(_ method: MethodBodyless, _ url: URL, query: URLQuery?, headers: Headers?) -> Single<ResponseFresh> {
         return request(
             methodFactory: { method.rawValue },
             urlFactory: {
@@ -224,7 +191,7 @@ public class RxNick {
         )
     }
     
-    public func bodyfulRequest(_ method: MethodBodyful, _ url: URL, body: RequestBody, headers: Headers?) -> Single<Response> {
+    public func bodyfulRequest(_ method: MethodBodyful, _ url: URL, body: RequestBody, headers: Headers?) -> Single<ResponseFresh> {
         return request(
             methodFactory: { method.rawValue },
             urlFactory: { url },
