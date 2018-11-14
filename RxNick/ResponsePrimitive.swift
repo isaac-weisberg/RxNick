@@ -8,7 +8,20 @@
 
 import Foundation
 
-public class ResponsePrimitive<Trait: ResponseTrait> {
+public protocol ResponsePrimitive {
+    var res: HTTPURLResponse { get }
+}
+
+public extension ResponsePrimitive {
+    public func ensureStatusCode(in union: StatusCodeRange) throws {
+        let code = res.statusCode
+        guard union.contains(where: { $0.contains(code) }) else {
+            throw NickError.statusCode(code, union)
+        }
+    }
+}
+
+public class FreshResponse: ResponsePrimitive {
     public let res: HTTPURLResponse
     public let data: Data?
     
@@ -17,20 +30,16 @@ public class ResponsePrimitive<Trait: ResponseTrait> {
         self.data = data
     }
     
-    public func ensureStatusCode(in union: StatusCodeRange) throws {
-        let code = res.statusCode
-        guard union.contains(where: { $0.contains(code) }) else {
-            throw NickError.statusCode(code, union)
-        }
-    }
-    
-    public func json<Target: Decodable>() throws -> Target {
+    public func json<Target: Decodable>() throws -> Response<Target> {
         let data = try ensureData()
+        let decoder = JSONDecoder()
+        let object: Target
         do {
-            return try JSONDecoder().decode(Target.self, from: data)
+            object = try decoder.decode(Target.self, from: data)
         } catch {
             throw NickError.parsing(error)
         }
+        return Response(res: res, data: data, object: object)
     }
     
     public func ensureData() throws -> Data {
@@ -41,12 +50,14 @@ public class ResponsePrimitive<Trait: ResponseTrait> {
     }
 }
 
-public typealias ResponseFresh = ResponsePrimitive<FreshResponseTrait>
-
-public protocol ResponseTrait {
+public class Response<Object: Decodable>: ResponsePrimitive {
+    public let res: HTTPURLResponse
+    public let data: Data
+    public let object: Object
     
-}
-
-public struct FreshResponseTrait: ResponseTrait {
-    
+    init(res: HTTPURLResponse, data: Data, object: Object) {
+        self.res = res
+        self.data = data
+        self.object = object
+    }
 }
