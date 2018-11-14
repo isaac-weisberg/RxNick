@@ -33,13 +33,13 @@ public class FreshResponse: ResponsePrimitive {
     public func json<Target: Decodable>() throws -> Response<Target> {
         let data = try ensureData()
         let decoder = JSONDecoder()
-        let object: Target
+        let target: Target
         do {
-            object = try decoder.decode(Target.self, from: data)
+            target = try decoder.decode(Target.self, from: data)
         } catch {
             throw NickError.parsing(error)
         }
-        return Response(res: res, data: data, object: object)
+        return Response(res: res, data: data, target: target)
     }
     
     public func ensureData() throws -> Data {
@@ -50,14 +50,14 @@ public class FreshResponse: ResponsePrimitive {
     }
 }
 
-public class Response<Object: Decodable>: ResponsePrimitive {
+public class Response<Target: Decodable>: ResponsePrimitive {
     public let res: HTTPURLResponse
     public let data: Data
-    public let object: Object
+    public let target: Target
     
-    init(res: HTTPURLResponse, data: Data, object: Object) {
+    init(res: HTTPURLResponse, data: Data, target: Target) {
         self.res = res
         self.data = data
-        self.object = object
+        self.target = target
     }
 }
