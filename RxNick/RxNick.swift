@@ -44,7 +44,7 @@ public enum NickError: Error {
     case encoding(Error)
     case expectedData
     case networking(Error)
-    case statusCode(Int, StatusCodeRangeUnion)
+    case statusCode(Int, StatusCodeRange)
 }
 
 public class Response {
@@ -56,7 +56,7 @@ public class Response {
         self.data = data
     }
     
-    public func ensureStatusCode(in union: StatusCodeRangeUnion) throws {
+    public func ensureStatusCode(in union: StatusCodeRange) throws {
         let code = res.statusCode
         guard union.contains(where: { $0.contains(code) }) else {
             throw NickError.statusCode(code, union)
@@ -158,7 +158,7 @@ public typealias URLQuery = [URLQueryItem]
 public typealias MethodFactory = () throws -> String
 public typealias HeadersFactory = () throws -> Headers
 public typealias URLFactory = () throws -> URL
-public typealias StatusCodeRangeUnion = [Range<Int>]
+public typealias StatusCodeRange = [Range<Int>]
 typealias HeaderMigrationStrat = (Headers.Value, Headers.Value) -> Headers.Value
 
 public class RxNick {
