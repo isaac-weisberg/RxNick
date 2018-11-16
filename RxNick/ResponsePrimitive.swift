@@ -15,7 +15,7 @@ public protocol ResponsePrimitive {
 public extension ResponsePrimitive {
     public func ensureStatusCode(in statusCodes: StatusCodes) throws {
         let code = res.statusCode
-        guard statusCodes.contains(statusCode: code) else {
+        guard statusCodes.contain(statusCode: code) else {
             throw NickError.statusCode(code, statusCodes)
         }
     }
