@@ -116,7 +116,6 @@ public typealias URLQuery = [URLQueryItem]
 public typealias MethodFactory = () throws -> String
 public typealias HeadersFactory = () throws -> Headers
 public typealias URLFactory = () throws -> URL
-public typealias StatusCodes = [Range<Int>]
 typealias HeaderMigrationStrat = (Headers.Value, Headers.Value) -> Headers.Value
 
 public class RxNick {
