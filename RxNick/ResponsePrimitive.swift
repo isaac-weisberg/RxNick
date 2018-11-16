@@ -13,7 +13,7 @@ public protocol ResponsePrimitive {
 }
 
 public extension ResponsePrimitive {
-    public func ensureStatusCode(in union: StatusCodeRange) throws {
+    public func ensureStatusCode(in union: StatusCodes) throws {
         let code = res.statusCode
         guard union.contains(where: { $0.contains(code) }) else {
             throw NickError.statusCode(code, union)
