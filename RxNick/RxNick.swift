@@ -23,7 +23,7 @@ extension URL {
         assert(optionalComponents != nil, "This means that the user has applied a URL with malformed URL string. I literally have no idea what it means, and at this point idc.")
         var components = optionalComponents!
         var urlQuery = components.queryItems ?? []
-        urlQuery.append(contentsOf: query.items)
+        urlQuery.append(contentsOf: query.queryItems)
         components.queryItems = urlQuery
         let resultingUrl = components.url
         assert(resultingUrl != nil, "This means that a url was poiting into the file:// scheme and the path was not absolute. Since it's a networking framework, please don't use it to work with the file system")

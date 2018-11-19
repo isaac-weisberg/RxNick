@@ -9,11 +9,11 @@
 import Foundation
 
 public protocol URLQuery {
-    var items: [URLQueryItem] { get }
+    var queryItems: [URLQueryItem] { get }
 }
 
 extension Array: URLQuery where Element == URLQueryItem {
-    public var items: [URLQueryItem] {
+    public var queryItems: [URLQueryItem] {
          return self
     }
 }
