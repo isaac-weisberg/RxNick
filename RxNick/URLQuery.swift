@@ -12,8 +12,16 @@ public protocol URLQuery {
     var items: [URLQueryItem] { get }
 }
 
-extension Array: URLQuery where Element == URLQueryItem {
+extension URLQueryItem: URLQuery {
     public var items: [URLQueryItem] {
-        return self
+        return [self]
+    }
+}
+
+extension Array: URLQuery where Element: URLQuery {
+    public var items: [URLQueryItem] {
+        return self.reduce([], { sum, query in
+            sum + query.items
+        })
     }
 }
