@@ -44,7 +44,7 @@ public enum NickError: Error {
     case encoding(Error)
     case expectedData
     case networking(Error)
-    case statusCode(Int, StatusCodeRange)
+    case statusCode(Int, StatusCodes)
 }
 
 public protocol RequestBody {
@@ -115,7 +115,6 @@ public typealias Headers = [String: String]
 public typealias MethodFactory = () throws -> String
 public typealias HeadersFactory = () throws -> Headers
 public typealias URLFactory = () throws -> URL
-public typealias StatusCodeRange = [Range<Int>]
 typealias HeaderMigrationStrat = (Headers.Value, Headers.Value) -> Headers.Value
 
 public class RxNick {
