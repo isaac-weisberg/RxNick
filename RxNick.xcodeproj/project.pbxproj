@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		5C493C11223D2C15009A445A /* RxNickResult.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C493C10223D2C15009A445A /* RxNickResult.swift */; };
 		5C5DA9F821A30E1D00A8820C /* URLQuery.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C5DA9F721A30E1D00A8820C /* URLQuery.swift */; };
 		5C7FF265219C6C2500D64DF0 /* ResponsePrimitive.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C7FF264219C6C2500D64DF0 /* ResponsePrimitive.swift */; };
 		5CFBE6A7218460D000B1F819 /* RxNick.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CFBE6A6218460D000B1F819 /* RxNick.swift */; };
@@ -15,6 +16,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		5C493C10223D2C15009A445A /* RxNickResult.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RxNickResult.swift; sourceTree = "<group>"; };
 		5C5DA9F721A30E1D00A8820C /* URLQuery.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = URLQuery.swift; sourceTree = "<group>"; };
 		5C7FF264219C6C2500D64DF0 /* ResponsePrimitive.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResponsePrimitive.swift; sourceTree = "<group>"; };
 		5CFBE69B218460BC00B1F819 /* RxNick.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = RxNick.framework; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -61,6 +63,7 @@
 				5C7FF264219C6C2500D64DF0 /* ResponsePrimitive.swift */,
 				5C5DA9F721A30E1D00A8820C /* URLQuery.swift */,
 				D3415AAF219F02E400E434A6 /* StatusCodes.swift */,
+				5C493C10223D2C15009A445A /* RxNickResult.swift */,
 			);
 			path = RxNick;
 			sourceTree = "<group>";
@@ -151,6 +154,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				5C493C11223D2C15009A445A /* RxNickResult.swift in Sources */,
 				5C5DA9F821A30E1D00A8820C /* URLQuery.swift in Sources */,
 				5C7FF265219C6C2500D64DF0 /* ResponsePrimitive.swift in Sources */,
 				5CFBE6A7218460D000B1F819 /* RxNick.swift in Sources */,

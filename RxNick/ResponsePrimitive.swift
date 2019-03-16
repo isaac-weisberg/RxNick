@@ -13,11 +13,12 @@ public protocol ResponsePrimitive {
 }
 
 public extension ResponsePrimitive {
-    public func ensureStatusCode(in statusCodes: StatusCodes) throws {
+    public func ensureStatusCode(in statusCodes: StatusCodes) -> RxNickResult<Void, NickError> {
         let code = res.statusCode
         guard statusCodes.contain(statusCode: code) else {
-            throw NickError.statusCode(code, statusCodes)
+            return .failure(NickError.statusCode(code, statusCodes))
         }
+        return .success(())
     }
 }
 
@@ -30,23 +31,29 @@ public class FreshResponse: ResponsePrimitive {
         self.data = data
     }
     
-    public func json<Target: Decodable>() throws -> Response<Target> {
-        let data = try ensureData()
+    public func json<Target: Decodable>() -> RxNickResult<Response<Target>, NickError> {
+        let data: Data
+        switch ensureData() {
+        case .success(let res):
+            data = res
+        case .failure(let error):
+            return .failure(error)
+        }
         let decoder = JSONDecoder()
         let target: Target
         do {
             target = try decoder.decode(Target.self, from: data)
         } catch {
-            throw NickError.parsing(error)
+            return .failure(NickError.parsing(error))
         }
-        return Response(res: res, data: data, target: target)
+        return .success(Response(res: res, data: data, target: target))
     }
     
-    public func ensureData() throws -> Data {
+    public func ensureData() -> RxNickResult<Data, NickError> {
         guard let data = data else {
-            throw NickError.expectedData
+            return .failure(NickError.expectedData)
         }
-        return data
+        return .success(data)
     }
 }
 
