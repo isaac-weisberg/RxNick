@@ -32,21 +32,21 @@ public class FreshResponse: ResponsePrimitive {
     }
     
     public func json<Target: Decodable>() -> RxNickResult<Response<Target>, NickError> {
-        let data: Data
-        switch ensureData() {
-        case .success(let res):
-            data = res
-        case .failure(let error):
-            return .failure(error)
-        }
-        let decoder = JSONDecoder()
-        let target: Target
-        do {
-            target = try decoder.decode(Target.self, from: data)
-        } catch {
-            return .failure(NickError.parsing(error))
-        }
-        return .success(Response(res: res, data: data, target: target))
+        return ensureData()
+            .map { data in
+                let decoder = JSONDecoder()
+                let target: Target
+                
+                do {
+                    target = try decoder.decode(Target.self, from: data)
+                } catch {
+                    return .failure(NickError.parsing(error))
+                }
+                return .success((data: data, target: target))
+            }
+            .map { (stuff: (data: Data, target: Target)) in
+                .success(Response(res: res, data: stuff.data, target: stuff.target))
+            }
     }
     
     public func ensureData() -> RxNickResult<Data, NickError> {
