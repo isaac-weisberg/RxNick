@@ -22,14 +22,3 @@ public extension RxNickResult {
         }
     }
 }
-
-public extension RxNickResult where Error: Swift.Error {
-    func materialied() throws -> Value {
-        switch self {
-        case .success(let val):
-            return val
-        case .failure(let err):
-            throw err
-        }
-    }
-}
